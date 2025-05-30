@@ -1,0 +1,28 @@
+name: smartmeter_app
+description: Application de surveillance de compteur intelligent
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  http: ^1.1.0
+  fl_chart: ^0.63.0
+  shared_preferences: ^2.2.0
+  #flutter_local_notifications: ^14.0.0+1
+  #speech_to_text: ^6.3.0
+  flutter_tts: ^3.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
