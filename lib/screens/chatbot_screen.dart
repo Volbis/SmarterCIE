@@ -63,7 +63,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.all(8),
                 children: [
-                  _buildQuickButton('💡 Ma consommation ?', '💡 Combien je consomme maintenant ?'),
+                  _buildQuickButton('💡 Ma conso ?', '💡 Combien je consomme maintenant ?'),
                   _buildQuickButton('⚠️ Je dépasse ?', '⚠️ Est-ce que je dépasse le seuil ?'),
                   _buildQuickButton('💰 Astuces éco', '💰 Donne-moi des astuces pour économiser'),
                   _buildQuickButton('📊 Bilan du jour', '📊 Quel est mon bilan énergétique du jour ?'),
