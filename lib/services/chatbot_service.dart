@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:langchain_openai/langchain_openai.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../models/chat_message.dart'; // Importer la classe UIChatMessage
+
+import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+import '../models/chat_message.dart'; 
 
 class ChatbotService extends ChangeNotifier {
   final ChatOpenAI _llm;
@@ -29,7 +32,7 @@ class ChatbotService extends ChangeNotifier {
 
   ChatbotService()
       : _llm = ChatOpenAI(
-          apiKey: dotenv.env['OPENAI_API_KEY'] ?? '',
+          apiKey: 'test-key', //dotenv.env['OPENAI_API_KEY'] ?? '',
           defaultOptions: const ChatOpenAIOptions(
             model: 'gpt-4o-mini',
             temperature: 0.7,
@@ -125,7 +128,15 @@ Question de l'utilisateur: $userInput
 
       return result['response'] as String;
     } catch (e) {
-      return "Désolé, je rencontre un problème technique. Veuillez réessayer plus tard.";
+      // Remplacer OpenAIException par Exception générique ou spécifique si disponible
+      if (e is Exception) {
+        return "Problème avec le service IA. Détail: ${e.toString()}";
+      } else if (e is TimeoutException) {
+        return "La réponse prend trop de temps. Réessayez.";
+      } else if (e is HttpException) {
+        return "Problème de connexion réseau.";
+      }
+      return "Erreur technique inattendue.";
     }
   }
 }

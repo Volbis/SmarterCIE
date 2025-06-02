@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'dart:async';
 
 import 'services/api_service.dart';
@@ -12,6 +13,8 @@ void main() async {
   // Assurez-vous que Flutter est initialisé
   WidgetsFlutterBinding.ensureInitialized();
   
+  await dotenv.load(fileName: ".env");
+
   // Optimisation du rendu de l'application
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -135,11 +138,11 @@ class _MainScreenState extends State<MainScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     
-    // Initialisation différée des écrans pour optimiser le chargement
+
     _screens = [
       _buildLazyScreen((context) => const DashboardScreen()),
-      _buildLazyScreen((context) => ChatbotScreen()),
-      _buildLazyScreen((context) => SettingsScreen()),
+      _buildLazyScreen((context) => const ChatbotScreen()),
+      _buildLazyScreen((context) => const SettingsScreen()),
     ];
   }
 
