@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/chatbot_service.dart';
 import '../services/api_service.dart';
 import '../widgets/chat_bubble.dart';
+import '../models/chat_message.dart'; // Ajoutez cet import
+
 
 class ChatbotScreen extends StatefulWidget {
   @override
@@ -17,7 +19,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
-    _chatbotService = ChatbotService(Provider.of<ApiService>(context, listen: false));
+    _chatbotService = ChatbotService();
     
     // Message de bienvenue
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -63,7 +65,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.all(8),
                 children: [
-                  _buildQuickButton('💡 Ma consommation ?', '💡 Combien je consomme maintenant ?'),
+                  _buildQuickButton('💡 Ma conso ?', '💡 Combien je consomme maintenant ?'),
                   _buildQuickButton('⚠️ Je dépasse ?', '⚠️ Est-ce que je dépasse le seuil ?'),
                   _buildQuickButton('💰 Astuces éco', '💰 Donne-moi des astuces pour économiser'),
                   _buildQuickButton('📊 Bilan du jour', '📊 Quel est mon bilan énergétique du jour ?'),

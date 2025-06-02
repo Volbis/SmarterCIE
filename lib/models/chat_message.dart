@@ -1,11 +1,11 @@
-class ChatMessage {
+class UIChatMessage {  
   final String text;
   final bool isUser;
   final DateTime timestamp;
-
-  ChatMessage({
+  
+  UIChatMessage({
     required this.text,
     required this.isUser,
-    required this.timestamp,
-  });
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 }
