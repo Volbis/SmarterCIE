@@ -38,15 +38,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         appBar: AppBar(
           title: Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Text('🤖', style: TextStyle(fontSize: 20)),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Assistant IA', style: TextStyle(fontSize: 16)),
+                  const Text('Assistant IA', style: TextStyle(fontSize: 16)),
                   Text('En ligne', style: TextStyle(fontSize: 12, color: Colors.green[100])),
                 ],
               ),

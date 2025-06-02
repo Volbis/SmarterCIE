@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import '../models/energy_data.dart';
 
 class ApiService extends ChangeNotifier {
-  static const String baseUrl = 'http://192.168.1.100:5000'; // IP de votre API
-  
+  static const String baseUrl = 'http://192.168.1.100:5000/consumption'; 
+
   List<EnergyData> _readings = [];
   EnergyStats? _stats;
   bool _isLoading = false;
