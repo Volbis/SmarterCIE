@@ -7,7 +7,10 @@ import '../models/chat_message.dart'; // Ajoutez cet import
 
 
 class ChatbotScreen extends StatefulWidget {
+  const ChatbotScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _ChatbotScreenState createState() => _ChatbotScreenState();
 }
 
@@ -59,11 +62,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         body: Column(
           children: [
             // Boutons suggestions rapides
-            Container(
+            SizedBox(
               height: 60,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 children: [
                   _buildQuickButton('💡 Ma conso ?', '💡 Combien je consomme maintenant ?'),
                   _buildQuickButton('⚠️ Je dépasse ?', '⚠️ Est-ce que je dépasse le seuil ?'),
@@ -73,7 +76,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
             
-            Divider(height: 1),
+            const Divider(height: 1),
             
             // Messages
             Expanded(
@@ -81,7 +84,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 builder: (context, chatService, child) {
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     itemCount: chatService.messages.length,
                     itemBuilder: (context, index) {
                       final message = chatService.messages[index];
@@ -94,7 +97,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             
             // Zone de saisie
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5)],
@@ -112,17 +115,17 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey[100],
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
                       onSubmitted: _sendMessage,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   FloatingActionButton(
                     onPressed: () => _sendMessage(_controller.text),
-                    child: Icon(Icons.send),
                     mini: true,
                     backgroundColor: Colors.green,
+                    child: const Icon(Icons.send),
                   ),
                 ],
               ),
@@ -135,15 +138,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   Widget _buildQuickButton(String label, String message) {
     return Padding(
-      padding: EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: 8),
       child: ElevatedButton(
         onPressed: () => _sendMessage(message),
-        child: Text(label, style: TextStyle(fontSize: 12)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green[100],
           foregroundColor: Colors.green[800],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
+        child: Text(label, style: const TextStyle(fontSize: 12)),
       ),
     );
   }
@@ -159,7 +162,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }

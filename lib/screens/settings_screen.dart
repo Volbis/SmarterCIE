@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -37,23 +39,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Paramètres'),
+        title: const Text('Paramètres'),
         backgroundColor: Colors.green,
       ),
       body: ListView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         children: [
           // Seuil d'alerte
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Seuil d\'alerte', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 8),
-                  Text('Recevoir une alerte si la consommation dépasse :'),
-                  SizedBox(height: 16),
+                  const Text('Seuil d\'alerte', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Recevoir une alerte si la consommation dépasse :'),
+                  const SizedBox(height: 16),
                   Slider(
                     value: _alertThreshold,
                     min: 500,
@@ -73,13 +75,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           // Notifications
           Card(
             child: SwitchListTile(
-              title: Text('Notifications'),
-              subtitle: Text('Recevoir des alertes en temps réel'),
+              title: const Text('Notifications'),
+              subtitle: const Text('Recevoir des alertes en temps réel'),
               value: _notificationsEnabled,
               onChanged: (value) {
                 setState(() {
@@ -90,17 +92,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           // Langue
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Langue du chatbot', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 8),
+                  const Text('Langue du chatbot', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
                   DropdownButton<String>(
                     value: _selectedLanguage,
                     isExpanded: true,
@@ -122,10 +124,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
 
           // Informations
-          Card(
+          const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Column(
