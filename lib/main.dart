@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+import 'firebase_options.dart';
 import 'dart:async';
 
 import 'services/api_service.dart';
@@ -13,6 +15,12 @@ void main() async {
   // Assurez-vous que Flutter est initialisé
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialisation de Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Chargement des variables d'environnement
   await dotenv.load(fileName: ".env");
 
   // Optimisation du rendu de l'application

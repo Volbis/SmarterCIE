@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "900927417626",
+    "project_id": "smartcie-e4a51",
+    "storage_bucket": "smartcie-e4a51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900927417626:android:dc8cd5eb5716129189d0a3",
+        "android_client_info": {
+          "package_name": "com.example.smartmeter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAV1HIllXDKy6YRlhcbYgfCAD-4wOIhYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

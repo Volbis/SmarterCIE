@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -42,6 +44,10 @@ dependencies {
     implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.window:window:1.0.0")
     implementation("androidx.window:window-java:1.0.0")
+
+     // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+
 }
 
 flutter {

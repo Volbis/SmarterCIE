@@ -25,6 +25,10 @@ dependencies:
   #speech_to_text: ^6.3.0
   flutter_tts: ^3.8.3
 
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
