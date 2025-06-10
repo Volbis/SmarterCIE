@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:smartmeter_app/main.dart';
-import 'package:smartmeter_app/services/auth_services/google_auth_service.dart';
+import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
