@@ -2,7 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 import 'firebase_options.dart';
 import 'dart:async';
 
@@ -10,6 +11,7 @@ import 'services/api_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/chatbot_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/auth.dart';
 
 void main() async {
   // Assurez-vous que Flutter est initialisé
@@ -19,9 +21,15 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  print("✅ Firebase initialisé avec succès");
   
   // Chargement des variables d'environnement
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: "assets/config/.env");
+    print("✅ Variables d'environnement chargées");
+  } catch (e) {
+    print("⚠️ Fichier .env non trouvé ou erreur de lecture: $e");
+  }
 
   // Optimisation du rendu de l'application
   SystemChrome.setSystemUIOverlayStyle(
@@ -48,6 +56,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ApiService(),
           lazy: true, // Ne crée le service que lorsqu'il est demandé
+        ),
+          //Le service Google Auth
+        ChangeNotifierProvider(
+          create: (_) => GoogleAuthService(),
+          lazy: false,
         ),
       ],
       child: MaterialApp(
@@ -79,56 +92,278 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+
+// État du splash screen
+// ...existing code...
+
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
-    _navigateToMain();
+    
+    // Contrôleurs d'animation
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    // Animations
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _startAnimations();
+    _navigateToAuth();
   }
 
-  _navigateToMain() async {
-    // Court délai pour permettre au splash de s'afficher
-    await Future.delayed(const Duration(milliseconds: 1000));
+  void _startAnimations() async {
+    // Démarrer les animations en séquence
+    await Future.delayed(const Duration(milliseconds: 300));
+    _scaleController.forward();
     
-    // Navigation vers l'écran principal
-    // ignore: use_build_context_synchronously
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-    );
+    await Future.delayed(const Duration(milliseconds: 200));
+    _fadeController.forward();
+    
+    await Future.delayed(const Duration(milliseconds: 400));
+    _slideController.forward();
+  }
+
+  _navigateToAuth() async {
+    await Future.delayed(const Duration(milliseconds: 4000));
+    
+    // Animation de sortie
+    await _fadeController.reverse();
+    
+    // Navigation vers l'écran d'authentification
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const AuthPage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOut,
+                )),
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _scaleController.dispose();
+    _slideController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.green,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.power_settings_new,
-              size: 80,
-              color: Colors.white,
-            ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'SmartMeter CIE',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2E7D32), // Vert foncé
+              Color(0xFF4CAF50), // Vert principal
+              Color(0xFF66BB6A), // Vert clair
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Section principale avec logo et titre
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo animé
+                      AnimatedBuilder(
+                        animation: _scaleAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.power_settings_new,
+                                size: 60,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      
+                      const SizedBox(height: 30),
+                      
+                      // Titre avec animation de slide
+                      SlideTransition(
+                        position: _slideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Column(
+                            children: [
+                              const Text(
+                                'SmartMeter',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'CIE',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w300,
+                                  letterSpacing: 4.0,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Container(
+                                width: 80,
+                                height: 2,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              
+              // Section du bas avec loading et version
+              Expanded(
+                flex: 1,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Indicateur de chargement personnalisé
+                      SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withOpacity(0.8),
+                          ),
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Texte de chargement
+                      Text(
+                        'Initialisation...',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 40),
+                      
+                      // Version info
+                      Text(
+                        'Version 1.0.0',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ...existing code...
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

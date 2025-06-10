@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartmeter_app/screens/auth.dart';
+import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
@@ -147,4 +151,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  Widget _buildLogoutButton() {
+  return ListTile(
+    leading: const Icon(Icons.logout, color: Colors.red),
+    title: const Text('Se déconnecter'),
+    onTap: () async {
+      final authService = Provider.of<GoogleAuthService>(context, listen: false);
+      await authService.signOut();
+      
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthPage()),
+        (route) => false,
+      );
+    },
+  );
+}
 }
