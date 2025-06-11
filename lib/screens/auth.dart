@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:smartmeter_app/main.dart';
 import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 
+import 'package:smartmeter_app/screens/form_infos.dart';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
 
@@ -11,13 +13,14 @@ class AuthPage extends StatefulWidget {
   State<AuthPage> createState() => _AuthPageState();
 }
 
+
 class _AuthPageState extends State<AuthPage>
     with TickerProviderStateMixin {
   bool isSignUp = true;
   bool isPasswordVisible = false;
   bool isLoading = false;
   bool rememberMe = false;
-  //bool agreeToTerms = false;
+  bool _emailLinkSent = false; // Nouveau état pour le lien e-mail
   String currentLanguage = 'fr';
 
   late AnimationController _animationController;
@@ -105,6 +108,8 @@ class _AuthPageState extends State<AuthPage>
       'terms': 'J\'accepte les Conditions d\'utilisation et la Politique de confidentialité',
       'facebook': 'Facebook',
       'google': 'Google',
+      'emailLink': 'Connexion par e-mail',
+      'emailLinkSent': 'Lien envoyé ! Vérifiez votre e-mail.',
     },
     'en': {
       'signUp': 'Sign Up',
@@ -122,13 +127,12 @@ class _AuthPageState extends State<AuthPage>
       'terms': 'I\'m agree to The Terms of Service and Privacy Policy',
       'facebook': 'Facebook',
       'google': 'Google',
+      'emailLink': 'Email Link Login',
+      'emailLinkSent': 'Link sent! Check your email.',
     }
   };
 
   String t(String key) => translations[currentLanguage][key] ?? key;
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -137,20 +141,13 @@ class _AuthPageState extends State<AuthPage>
       body: SafeArea(
         child: Stack(
           children: [
-            // Language Selector
-            Positioned(
-              top: 20,
-              right: 20,
-              child: _buildLanguageSelector(),
-            ),
-            
             // Main Content 
             SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: MediaQuery.of(context).size.height - 
-                            MediaQuery.of(context).padding.top - 40, // Adjusted for safe area
+                            MediaQuery.of(context).padding.top - 40,
                 ),
                 child: IntrinsicHeight(
                   child: Column(
@@ -165,17 +162,41 @@ class _AuthPageState extends State<AuthPage>
                       const SizedBox(height: 15), 
                       _buildDivider(),
                       const SizedBox(height: 15), 
+
+                    // 🧪 BOUTON TEMPORAIRE POUR TESTER LE FORMULAIRE
+                      _buildTestFormButton()
+                      
+                      ,
+                      const SizedBox(height: 20),
                       _buildForm(),
                       const SizedBox(height: 20), 
                       _buildPrimaryButton(),
-                      const SizedBox(height: 15), 
-                      //if (!isSignUp) _buildForgotPassword(),
+                      const SizedBox(height: 15),
+                      // Nouvelle section pour connexion par lien e-mail
+                      if (!isSignUp && !_emailLinkSent) _buildEmailLinkButton(),
+                      if (!isSignUp && _emailLinkSent) _buildEmailLinkSentMessage(),
+                      const SizedBox(height: 15),
                       _buildSwitchAuth(),
                       const SizedBox(height: 20), 
+          
                     ],
                   ),
                 ),
               ),
+            ),
+            // Overlay pour les erreurs et loading depuis le service
+            Consumer<GoogleAuthService>(
+              builder: (context, authService, child) {
+                if (authService.isLoading && !isLoading) {
+                  return Container(
+                    color: Colors.black26,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ],
         ),
@@ -184,9 +205,99 @@ class _AuthPageState extends State<AuthPage>
   }
     
 
+// 🧪 MÉTHODE TEMPORAIRE POUR TESTER LE FORMULAIRE
+Widget _buildTestFormButton() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      children: [
+        // Séparateur visuel
+        Container(
+          height: 1,
+          color: Colors.grey[300],
+          margin: const EdgeInsets.symmetric(vertical: 10),
+        ),
+        
+        // Titre de debug
+        const Text(
+          '🧪 Mode Debug',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+   
+        const SizedBox(height: 10),
+        
+        // Bouton de test
+        ElevatedButton.icon(
+          onPressed: _navigateToTestForm,
+          icon: const Icon(
+            Icons.science_outlined,
+            color: Colors.white,
+            size: 20,
+          ),
+          label: const Text(
+            'Tester le formulaire d\'infos',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.purple[600],
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        
+        // Info supplémentaire
+        const SizedBox(height: 8),
+        const Text(
+          'Bouton temporaire - À supprimer plus tard',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// 🧪 MÉTHODE POUR NAVIGUER VERS LE FORMULAIRE DE TEST
+void _navigateToTestForm() {
+  HapticFeedback.lightImpact();
+  
+  // Navigation directe vers le formulaire sans authentification
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => const UserProfileSetupScreen(
+        isNewUser: true, // Simuler un nouvel utilisateur
+      ),
+    ),
+  );
+  
+  // Message informatif
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('🧪 Mode test : Navigation vers le formulaire'),
+      backgroundColor: Colors.purple,
+      duration: Duration(seconds: 2),
+    ),
+  );
+}
 
 
 
+
+/*
   Widget _buildLanguageSelector() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
@@ -218,77 +329,47 @@ class _AuthPageState extends State<AuthPage>
       ),
     );
   }
+*/
+  
+
 
   Widget _buildLogoSection() {
-    return AnimatedBuilder(
-      animation: _fadeAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _slideAnimation.value),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: Column(
-              children: [
-                AnimatedBuilder(
-                  animation: _pulseAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _pulseAnimation.value,
-                      child: Container(
-                        width: 90,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFFF8A00), Color(0xFFFF6B00)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF8A00).withOpacity(0.3),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '⚡',
-                            style: TextStyle(fontSize: 35),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  isSignUp ? t('signUp') : t('signIn'),
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    t('subtitle'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF666666),
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ],
+    return Container(
+      width: double.infinity,
+      height: 235, 
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_img.png'),
+          fit: BoxFit.cover, // L'image couvre tout l'arrière-plan
+          opacity: 0.3, // Transparence pour que le texte reste lisible
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isSignUp ? t('signUp') : t('signIn'),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF333333),
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 10),
+            Text(
+              t('subtitle'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Color(0xFF666666),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -314,6 +395,7 @@ class _AuthPageState extends State<AuthPage>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  // CORRECTION ICI : logique inversée
                   color: !isSignUp ? const Color(0xFFFF8A00) : const Color(0xFF666666),
                 ),
               ),
@@ -349,10 +431,11 @@ class _AuthPageState extends State<AuthPage>
       ],
     );
   }
-
+    
   Widget _buildSocialSection() {
     return Row(
       children: [
+/*
         Expanded(
           child: _buildSocialButton(
             'facebook', 
@@ -360,6 +443,7 @@ class _AuthPageState extends State<AuthPage>
             t('facebook')
           )
         ),
+*/
         const SizedBox(width: 15),
         Expanded(
           child: _buildSocialButton(
@@ -376,8 +460,9 @@ class _AuthPageState extends State<AuthPage>
     return GestureDetector(
       onTap: () => _socialLogin(provider),
       child: Container(
+        height: 50,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: const Color(0xFFE1E5E9), width: 1),
@@ -401,7 +486,7 @@ class _AuthPageState extends State<AuthPage>
               height:60,
               fit: BoxFit.contain,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 2),
             Flexible(
               child: Text(
                 label,
@@ -450,7 +535,7 @@ class _AuthPageState extends State<AuthPage>
             hintText: t('name'),
             nextFocusNode: emailFocus,
           ),
-          const SizedBox(height: 17),
+          const SizedBox(height: 14),
         ],
         _buildTextField(
           controller: emailController,
@@ -458,15 +543,38 @@ class _AuthPageState extends State<AuthPage>
           hintText: t('emailPhone'),
           nextFocusNode: passwordFocus,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 14),
         _buildTextField(
           controller: passwordController,
           focusNode: passwordFocus,
           hintText: t('password'),
           isPassword: true,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 14),
         if (!isSignUp) _buildRememberMe(),
+
+        // Affichage des erreurs du service
+        Consumer<GoogleAuthService>(
+          builder: (context, authService, child) {
+            if (authService.errorMessage != null) {
+              return Container(
+                margin: const EdgeInsets.only(top: 14),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  border: Border.all(color: Colors.red[300]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  authService.errorMessage!,
+                  style: TextStyle(color: Colors.red[700]),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ],
     );
   }
@@ -511,7 +619,7 @@ class _AuthPageState extends State<AuthPage>
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
-            vertical: 16,
+            vertical: 12,
           ),
           suffixIcon: isPassword ? IconButton(
             icon: Icon(
@@ -528,6 +636,7 @@ class _AuthPageState extends State<AuthPage>
       ),
     );
   }
+
 /*
   Widget _buildTermsCheckbox() {
     return Row(
@@ -566,6 +675,7 @@ class _AuthPageState extends State<AuthPage>
     );
   }
 */
+  
   Widget _buildRememberMe() {
     return Row(
       children: [
@@ -603,7 +713,7 @@ class _AuthPageState extends State<AuthPage>
           ),
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -640,6 +750,52 @@ class _AuthPageState extends State<AuthPage>
       ),
     );
   }
+
+  
+  // Nouveau bouton pour connexion par lien e-mail
+  Widget _buildEmailLinkButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _sendEmailLink,
+        icon: const Icon(Icons.email_outlined),
+        label: Text(t('emailLink')),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFFF8A00),
+          side: const BorderSide(color: Color(0xFFFF8A00)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Message de confirmation d'envoi du lien
+  Widget _buildEmailLinkSentMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        border: Border.all(color: Colors.green[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green[700]),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              t('emailLinkSent'),
+              style: TextStyle(color: Colors.green[700]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 /*
   Widget _buildForgotPassword() {
     return Padding(
@@ -689,12 +845,12 @@ class _AuthPageState extends State<AuthPage>
   void _switchTab(bool signUp) {
     setState(() {
       isSignUp = signUp;
+      _emailLinkSent = false; // Reset du statut du lien e-mail
     });
     // Reset form
     nameController.clear();
     emailController.clear();
     passwordController.clear();
-    //agreeToTerms = false;
     rememberMe = false;
   }
 
@@ -713,79 +869,207 @@ class _AuthPageState extends State<AuthPage>
     }
   }
 
-    Future<void> _handleGoogleSignIn() async {
-        try {
-          // Afficher un indicateur de chargement
-          setState(() {
-            isLoading = true;
-          });
+  Future<void> _handleGoogleSignIn() async {
+      try {
+        // Afficher un indicateur de chargement
+        setState(() {
+          isLoading = true;
+        });
 
-          final googleAuthService = Provider.of<GoogleAuthService>(context, listen: false);
-          final userCredential = await googleAuthService.signInWithGoogle();
+        final googleAuthService = Provider.of<GoogleAuthService>(context, listen: false);
+        final userCredential = await googleAuthService.signInWithGoogle();
 
-          if (userCredential != null) {
-            // Connexion réussie
-            HapticFeedback.mediumImpact();
-            
-            // Navigation vers MainScreen
+        if (userCredential != null) {
+
+          final user = userCredential.user!;
+          
+          // Vérifier si c'est un nouvel utilisateur ou si le profil n'est pas complet
+          final isNewUser = await googleAuthService.isNewUser(user.uid);
+          
+          if (isNewUser) {
+            // Créer un profil minimal si c'est vraiment nouveau
+            if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+              await googleAuthService.createMinimalProfile(
+                user.uid,
+                user.displayName ?? 'Utilisateur',
+                user.email!,
+              );
+            }
+          }
+          // Connexion réussie
+          HapticFeedback.mediumImpact();
+          
+          if (isNewUser) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => UserProfileSetupScreen(
+                  isNewUser: userCredential.additionalUserInfo?.isNewUser ?? false,
+                ),
+              ),
+            );
+          } else {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (_) => const MainScreen(),
               ),
             );
-
-            // Afficher un message de succès
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Connexion Google réussie !'),
-                backgroundColor: Color(0xFF38b000),
-              ),
-            );
           }
-        } catch (e) {
-          // Gestion des erreurs
-          print('Erreur Google Sign-In: $e');
-          
+
+          // Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur de connexion: ${e.toString()}'),
-              backgroundColor: Colors.red,
+            const SnackBar(
+              content: Text('Connexion Google réussie !'),
+              backgroundColor: Color(0xFF38b000),
             ),
           );
+        }
+      } catch (e) {
+        // Gestion des erreurs
+        print('Erreur Google Sign-In: $e');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de connexion: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        // Arrêter l'indicateur de chargement
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    }
+
+
+  // Nouvelle méthode pour envoyer le lien e-mail
+  Future<void> _sendEmailLink() async {
+    if (emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez entrer votre adresse e-mail'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final authService = Provider.of<GoogleAuthService>(context, listen: false);
+    final success = await authService.sendSignInLinkToEmail(emailController.text.trim());
+
+    if (success && mounted) {
+      setState(() => _emailLinkSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lien d\'authentification envoyé ! Vérifiez votre boîte e-mail.'),
+          backgroundColor: Color(0xFF38b000),
+        ),
+      );
+    }
+  }
+
+
+  // Méthode modifiée pour gérer l'inscription et la connexion
+  void _handleSubmit() async {
+    // Validation des champs
+    if (emailController.text.trim().isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez remplir tous les champs requis'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (isSignUp && nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez entrer votre nom'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final authService = Provider.of<GoogleAuthService>(context, listen: false);
+
+try {
+    dynamic result;
+    bool isNewUser = false;
+      
+      if (isSignUp) {
+        // Inscription - toujours un nouvel utilisateur
+        result = await authService.signUpWithEmailPassword(
+          emailController.text.trim(),
+          passwordController.text,
+          nameController.text.trim(),
+        );
+        
+        if (result != null) {
+          // Créer un profil minimal
+          await authService.createMinimalProfile(
+            result.user!.uid,
+            nameController.text.trim(),
+            emailController.text.trim(),
+          );
+          isNewUser = true;
+        }
+      } else {
+        // Connexion - vérifier si le profil est complet
+        result = await authService.signInWithEmailPassword(
+          emailController.text.trim(),
+          passwordController.text,
+        );
+        
+        if (result != null) {
+          isNewUser = await authService.isNewUser(result.user!.uid);
+        }
+      }
+
+      if (result != null && mounted) {
+            HapticFeedback.mediumImpact();
+            
+            // Navigation conditionnelle
+            if (isNewUser) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => UserProfileSetupScreen(isNewUser: isSignUp),
+                ),
+              );
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => const MainScreen(),
+                ),
+              );
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isSignUp 
+                    ? 'Compte créé avec succès !' 
+                    : 'Connexion réussie !',
+                ),
+                backgroundColor: const Color(0xFF38b000),
+              ),
+            );
+         }
+        } catch (e) {
+          print('Erreur authentification: $e');
         } finally {
-          // Arrêter l'indicateur de chargement
           if (mounted) {
             setState(() {
               isLoading = false;
             });
           }
         }
-      }
-
-
-  void _handleSubmit() async {
-
-    setState(() {
-      isLoading = true;
-    });
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      isLoading = false;
-    });
-
-    HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isSignUp 
-            ? 'Compte créé avec succès !' 
-            : 'Connexion réussie !',
-        ),
-        backgroundColor: const Color(0xFF38b000),
-      ),
-    );
-  }
-}
+     }
+   }

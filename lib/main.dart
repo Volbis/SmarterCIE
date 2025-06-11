@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
 import 'services/api_service.dart';
@@ -23,6 +24,14 @@ void main() async {
   );
   print("✅ Firebase initialisé avec succès");
   
+  
+  // 🎯 Initialiser Firestore
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+
   // Chargement des variables d'environnement
   try {
     await dotenv.load(fileName: "assets/config/.env");
@@ -92,9 +101,6 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-
-// État du splash screen
-// ...existing code...
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _fadeController;
@@ -362,8 +368,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
   }
 }
-
-// ...existing code...
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
