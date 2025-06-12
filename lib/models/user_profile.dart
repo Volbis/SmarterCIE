@@ -4,8 +4,8 @@ class UserProfile {
   final String email;
   final String? phoneNumber;
   final String? address;
-  final String meterNumber; // 🆕 NOUVEAU
-  final String monthlyBill; // 🆕 NOUVEAU (en FCFA)
+  final String meterNumber;
+  final String monthlyBill; 
   final String householdSize;
   final String averageConsumption;
   final String electricityProvider;
@@ -21,8 +21,8 @@ class UserProfile {
     required this.email,
     this.phoneNumber,
     this.address,
-    required this.meterNumber, // 🆕 NOUVEAU
-    required this.monthlyBill, // 🆕 NOUVEAU
+    required this.meterNumber, 
+    required this.monthlyBill, 
     required this.householdSize,
     required this.averageConsumption,
     required this.electricityProvider,

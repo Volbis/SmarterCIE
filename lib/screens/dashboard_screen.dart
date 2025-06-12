@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
 import '../services/api_service.dart';
 import '../widgets/energy_chart.dart';
 import '../widgets/alert_card.dart';
@@ -24,13 +25,20 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     await Future.delayed(Duration.zero);
     if (_isFirstLoad && mounted) {
       _isFirstLoad = false;
-      await Provider.of<ApiService>(context, listen: false).fetchData();
-    }
+            // Charger les données API et utilisateur
+      await Future.wait([
+        Provider.of<ApiService>(context, listen: false).fetchData(),
+        Provider.of<UserService>(context, listen: false).fetchUserData(), // 🆕 Charger données utilisateur
+      ]);    }
   }
 
   Future<void> _refreshData() async {
-    await Provider.of<ApiService>(context, listen: false).fetchData();
+    await Future.wait([
+      Provider.of<ApiService>(context, listen: false).fetchData(),
+      Provider.of<UserService>(context, listen: false).fetchUserData(), // 🆕 Refresh données utilisateur
+    ]);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -38,22 +46,22 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: Consumer<ApiService>(
-        builder: (context, apiService, child) {
+      body: Consumer2<ApiService, UserService>( // 🆕 Consumer2 pour les deux services
+        builder: (context, apiService, userService, child) {
           return RefreshIndicator(
             onRefresh: _refreshData,
-            color: const Color(0xFFFF8A00),
+            color: const Color(0xFF38b000),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // Header personnalisé
+                // Header personnalisé avec nom dynamique
                 SliverToBoxAdapter(
-                  child: _buildHeader(apiService),
+                  child: _buildHeader(apiService, userService), // 🆕 Passer userService
                 ),
                 // Contenu principal
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: apiService.isLoading && _isFirstLoad
+                  child: (apiService.isLoading || userService.isLoading) && _isFirstLoad
                       ? _buildLoadingView()
                       : _buildDashboardContent(apiService),
                 ),
@@ -65,126 +73,141 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  Widget _buildHeader(ApiService apiService) {
-    final currentPower = apiService.isLoading ? 0.0 : apiService.getCurrentPower();
-    final todayEnergy = apiService.isLoading ? 0.0 : apiService.getTodayEnergy();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFF7A00), Color(0xFFFF4D00)],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(40),
-          bottomRight: Radius.circular(40),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+  Widget _buildHeader(ApiService apiService, UserService userService) { // 🆕 Ajouter UserService
+      final currentPower = apiService.isLoading ? 0.0 : apiService.getCurrentPower();
+      final todayEnergy = apiService.isLoading ? 0.0 : apiService.getTodayEnergy();
+      
+      // 🆕 Récupérer le nom utilisateur
+      final userName = userService.displayName;
+      final timeOfDay = _getTimeOfDay();
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(40),
-            bottomRight: Radius.circular(40),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7FB069), Color(0xFF38b000)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF38b000).withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // En-tête avec nom et notification
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 800),
-                  builder: (context, value, child) => Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // En-tête avec nom et notification
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, value, child) => Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: child,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          timeOfDay, // 🆕 Salutation dynamique selon l'heure
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // 🆕 Gestion du loading et erreur pour le nom
+                        userService.isLoading
+                            ? const SizedBox(
+                                width: 120,
+                                height: 28,
+                                child: LinearProgressIndicator(
+                                  backgroundColor: Colors.white24,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Text(
+                                userName, // 🆕 Nom dynamique depuis Firestore
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                      ],
                     ),
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Stack(
                     children: [
-                      Text(
-                        'Bonjour,',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w400,
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: 26,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Kouamé',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: Color.fromARGB(218, 245, 93, 11), 
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color.fromARGB(218, 245, 93, 11),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Stack(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF38b000),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0xFF38b000),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            const SizedBox(height: 32),
+              const SizedBox(height: 7),
 
-            // Statut et date
-            Row(
+              // Statut et date
+              Row(
               children: [
                 TweenAnimationBuilder(
                   tween: Tween<double>(begin: 0, end: 1),
@@ -199,10 +222,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -211,7 +234,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                       children: [
                         Icon(
                           Icons.bolt,
-                          color: Colors.greenAccent,
+                          color: Colors.white,
                           size: 16,
                         ),
                         SizedBox(width: 8),
@@ -238,8 +261,9 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 ),
               ],
             ),
+              
+              const SizedBox(height: 24),
 
-            const SizedBox(height: 24),
 
             // Consommation actuelle
             TweenAnimationBuilder(
@@ -278,10 +302,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 ],
               ),
             ),
+              
+              const SizedBox(height: 8),
 
-            const SizedBox(height: 8),
-
-            Text(
+              Text(
               '${todayEnergy.toStringAsFixed(1)} kWh consommés aujourd\'hui',
               style: const TextStyle(
                 color: Colors.white70,
@@ -295,14 +319,29 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-// Helper function pour le nom du mois
-String _getMonthName(int month) {
-  const months = [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-  ];
-  return months[month - 1];
-}
+    // Fonction helper pour la salutation selon l'heure
+  String _getTimeOfDay() {
+    final hour = DateTime.now().hour;
+    
+    if (hour >= 5 && hour < 12) {
+      return 'Bonjour,';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Bon après-midi,';
+    } else if (hour >= 17 && hour < 21) {
+      return 'Bonsoir,';
+    } else {
+      return 'Bonne nuit,';
+    }
+  }
+
+  // Helper function pour le nom du mois
+  String _getMonthName(int month) {
+    const months = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+    return months[month - 1];
+  }
 
 
   Widget _buildLoadingView() {
@@ -329,9 +368,7 @@ String _getMonthName(int month) {
           _buildQuickStats(apiService),
           const SizedBox(height: 25),
           _buildAlertsSection(apiService),
-          const SizedBox(height: 25),
-          _buildConnectedDevices(),
-
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -481,35 +518,6 @@ String _getMonthName(int month) {
     );
   }
 
-  Widget _buildChartStat(String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-    
   Widget _buildQuickStats(ApiService apiService) {
     return Row(
       children: [
@@ -712,153 +720,6 @@ String _getMonthName(int month) {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildConnectedDevices() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Appareils connectés',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
-              ),
-            ),
-            Text(
-              'Gérer',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        
-        // Liste des appareils
-        _buildDeviceItem('Télévision Salon', '15 kWh aujourd\'hui', Colors.orange, true),
-        const SizedBox(height: 10),
-        _buildDeviceItem('Climatiseur Chambre', '8 kWh aujourd\'hui', Colors.blue, false),
-      ],
-    );
-  }
-
-  Widget _buildDeviceItem(String name, String consumption, Color color, bool isOn) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              name.contains('Télévision') ? Icons.tv : Icons.ac_unit,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  consumption,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isOn ? Colors.green[100] : Colors.red[100],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              isOn ? 'En cours' : 'Éteint',
-              style: TextStyle(
-                fontSize: 12,
-                color: isOn ? Colors.green[700] : Colors.red[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildActionButton(String label, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

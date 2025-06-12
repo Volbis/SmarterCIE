@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smartmeter_app/services/auth_services/auth_service.dart';
+import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -66,12 +67,20 @@ class MyApp extends StatelessWidget {
           create: (_) => ApiService(),
           lazy: true, // Ne crée le service que lorsqu'il est demandé
         ),
+
           //Le service Google Auth
         ChangeNotifierProvider(
           create: (_) => GoogleAuthService(),
           lazy: false,
         ),
+
+        // Le service d'authentification principal
+        ChangeNotifierProvider(
+          create: (_) => UserService(),
+          lazy: false, // Chargement immédiat pour éviter les problèmes de synchronisation
+          ), 
       ],
+
       child: MaterialApp(
         title: 'SmartMeter CIE',
         debugShowCheckedModeBanner: false, // Supprime la bannière debug

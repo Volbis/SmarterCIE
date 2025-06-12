@@ -708,6 +708,8 @@ void _navigateToTestForm() {
           backgroundColor: Colors.transparent,
           elevation: 0,
           padding: EdgeInsets.zero,
+          splashFactory: NoSplash.splashFactory, // 🔧 AJOUT : Désactive l'effet splash
+          overlayColor: Colors.transparent, // 🔧 AJOUT : Overlay transparent
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -718,12 +720,12 @@ void _navigateToTestForm() {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFF8A00), Color(0xFFFF6B00)],
+              colors: [Color.fromARGB(255, 129, 193, 99), Color.fromARGB(255, 81, 198, 27)], 
             ),
             borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF8A00).withOpacity(0.4),
+                color: const Color(0xFF38b000).withOpacity(0.4), // 🎨 Ombre verte
                 blurRadius: 25,
                 offset: const Offset(0, 8),
               ),
@@ -750,8 +752,7 @@ void _navigateToTestForm() {
       ),
     );
   }
-
-  
+    
   // Nouveau bouton pour connexion par lien e-mail
   Widget _buildEmailLinkButton() {
     return SizedBox(

@@ -103,39 +103,127 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFFF8A00), Color(0xFFFF6B00)],
+Widget _buildHeader() {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    child: Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color.fromARGB(255, 129, 193, 99), Color.fromARGB(255, 81, 198, 27)], 
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 70, 210, 6).withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.isNewUser ? 'Bienvenue !' : 'Complétez votre profil',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+          // Section profil simplifiée
+          Row(
+            children: [
+              // Avatar simple
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Informations utilisateur
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Configuration profil',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Personnalisation énergétique',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Indicateur simple
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Aidez-nous à personnaliser votre expérience',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
+          
+          const SizedBox(height: 20),
+          
+          // Description minimaliste
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.tune,
+                  color: Colors.white.withOpacity(0.9),
+                  size: 18,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Quelques questions pour optimiser votre expérience',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+} 
 
   Widget _buildProgressIndicator() {
     return Container(
@@ -148,7 +236,7 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
               height: 4,
               decoration: BoxDecoration(
                 color: index <= _currentStep 
-                  ? const Color(0xFFFF8A00) 
+                  ? const Color(0xFF38b000) 
                   : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -534,6 +622,7 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
+                  
                   'Précédent',
                   style: TextStyle(color: Color(0xFFFF8A00), fontSize: 16),
                 ),
@@ -648,36 +737,40 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       print('🧪 DEBUG: Utilisateur: ${user?.uid}');
       
       if (user != null) {
-        // 🆕 Calcul de la facture finale
-        String finalBillAmount = _selectedBillRange == 'Montant personnalisé' 
-          ? _customBillController.text.trim() 
-          : _selectedBillRange;
-      
-        final profile = UserProfile(
-          uid: user.uid,
-          name: user.displayName ?? '',
-          email: user.email ?? '',
-          phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
-          address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-          meterNumber: _meterNumberController.text.trim(), // 🆕 NOUVEAU
-          monthlyBill: finalBillAmount, // 🆕 NOUVEAU
-          householdSize: _selectedHouseholdSize,
-          averageConsumption: _selectedConsumption == 'Je ne sais pas' 
-            ? _otherConsumptionController.text.trim() 
-            : _selectedConsumption,
-          electricityProvider: _selectedProvider,
-          tariffPlan: _selectedTariff,
-          appliances: _selectedAppliances,
-          profileCompleted: true,
-          createdAt: DateTime.now(),
-        );
+        // 🆕 Calcul de la facture finale avec vérification
+        String finalBillAmount = '';
+        if (_selectedBillRange == 'Montant personnalisé') {
+          finalBillAmount = _customBillController.text.trim();
+        } else if (_selectedBillRange.isNotEmpty) {
+          finalBillAmount = _selectedBillRange;
+        }
+        // Si aucune sélection, finalBillAmount reste vide
+        
+final profile = UserProfile(
+  uid: user.uid!, // Add ! to assert non-null
+  name: user.displayName ?? '',
+  email: user.email ?? '',
+  phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+  address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+  meterNumber: _meterNumberController.text.trim(),
+  monthlyBill: finalBillAmount.isNotEmpty ? finalBillAmount : 'Pas renseigné',
+  householdSize: _selectedHouseholdSize,
+  averageConsumption: _selectedConsumption == 'Je ne sais pas' 
+    ? _otherConsumptionController.text.trim() 
+    : _selectedConsumption,
+  electricityProvider: _selectedProvider,
+  tariffPlan: _selectedTariff,
+  appliances: _selectedAppliances,
+  profileCompleted: true,
+  createdAt: DateTime.now(),
+);
 
-        print('🧪 DEBUG: Profil créé: ${profile.toString()}');
-        print('🧪 DEBUG: Numéro compteur: ${profile.meterNumber}');
-        print('🧪 DEBUG: Facture mensuelle: ${profile.monthlyBill}');
-        
-        await FirestoreService.saveUserProfile(profile);
-        
+      print('🧪 DEBUG: Profil créé: ${profile.toString()}');
+      print('🧪 DEBUG: Numéro compteur: ${profile.meterNumber}');
+      print('🧪 DEBUG: Facture mensuelle: ${profile.monthlyBill}');
+      
+      await FirestoreService.saveUserProfile(profile);
+      
         print('🧪 DEBUG: Profil sauvegardé avec succès');
         
         if (mounted) {
@@ -714,4 +807,5 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       }
     }
   }
+
 }
