@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:smartmeter_app/screens/notifs_screen.dart';
 import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
 import '../services/api_service.dart';
 import '../widgets/energy_chart.dart';
 import '../widgets/alert_card.dart';
 
 class DashboardScreen extends StatefulWidget {
+  
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
@@ -14,6 +16,7 @@ class DashboardScreen extends StatefulWidget {
  
 class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAliveClientMixin {
   bool _isFirstLoad = true;
+  String? _userId;
 
   @override
   void initState() {
@@ -29,6 +32,8 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       debugPrint('🔄 Début du chargement des données dashboard');
       
       final userService = Provider.of<UserService>(context, listen: false);
+      _userId = userService.userId; // Store it if needed
+      
       debugPrint('👤 UserService actuel - UID: ${userService.userId}');
       debugPrint('⚡ Puissance actuelle avant fetch: ${userService.currentPower}');
       
@@ -42,11 +47,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       userService.listenToUserData();
       userService.listenToAlertStatus(); 
           
-      
       debugPrint('⚡ Puissance actuelle après fetch: ${userService.currentPower}');
     }
   }
-
+    
   Future<void> _refreshData() async {
     await Future.wait([
       Provider.of<ApiService>(context, listen: false).fetchData(),
@@ -54,21 +58,9 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     ]);
   }
 
-  Future<void> markAlertAsRead() async {
-    if (_userId == null) return;
-    
-    try {
-      await _firestore.collection('users').doc(_userId).update({
-        'alerte': false,
-      });
-      
-      _hasAlert = false;
-      notifyListeners();
-      
-      debugPrint('✅ Alerte marquée comme lue');
-    } catch (e) {
-      debugPrint('❌ Erreur lors de la mise à jour de l\'alerte: $e');
-    }
+  void _markAlertAsRead() {
+    final userService = Provider.of<UserService>(context, listen: false);
+    userService.markAlertAsRead();
   }
 
   @override
@@ -644,20 +636,13 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                children: const [
                   const Text(
                     'Alertes & Conseils',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF333333),
-                    ),
-                  ),
-                  Text(
-                    'Tout voir',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
                     ),
                   ),
                 ],

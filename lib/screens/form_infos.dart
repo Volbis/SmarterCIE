@@ -34,7 +34,7 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
   String _selectedConsumption = '';
   String _selectedProvider = '';
   String _selectedTariff = '';
-  String _selectedBillRange = ''; // 🆕 NOUVEAU
+  String _selectedBillRange = ''; 
   List<String> _selectedAppliances = [];
 
   // Options prédéfinies
@@ -64,6 +64,47 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
     'Réfrigérateur', 'Climatiseur', 'Machine à laver', 'Télévision',
     'Ordinateur', 'Micro-onde', 'Fer à repasser', 'Ventilateur'
   ];
+
+
+
+  // NOUVEAU - Fonction pour calculer le seuil de consommation
+  String _calculateConsumptionThreshold(String billRange, String? customAmount) {
+    // Si montant personnalisé, l'utiliser directement
+    if (billRange == 'Montant personnalisé' && customAmount != null && customAmount.isNotEmpty) {
+      try {
+        double amount = double.parse(customAmount);
+        return amount.toStringAsFixed(0);
+      } catch (e) {
+        print('❌ Erreur parsing montant personnalisé: $e');
+        return '0';
+      }
+    }
+    
+    // Calculer la moyenne pour les intervalles prédéfinis
+    switch (billRange) {
+      case 'Moins de 10 000 FCFA':
+        return '5000'; // Moyenne entre 0 et 10 000
+      
+      case '10 000 - 25 000 FCFA':
+        return '17500'; // Moyenne entre 10 000 et 25 000
+      
+      case '25 000 - 50 000 FCFA':
+        return '37500'; // Moyenne entre 25 000 et 50 000
+      
+      case '50 000 - 100 000 FCFA':
+        return '75000'; // Moyenne entre 50 000 et 100 000
+      
+      case '100 000 - 200 000 FCFA':
+        return '150000'; // Moyenne entre 100 000 et 200 000
+      
+      case 'Plus de 200 000 FCFA':
+        return '250000'; // Estimation conservatrice (200k + 50k de marge)
+      
+      default:
+        return '0'; // Valeur par défaut si aucune sélection
+    }
+  }
+
 
   @override
   void dispose() {
@@ -737,40 +778,50 @@ Widget _buildHeader() {
       print('🧪 DEBUG: Utilisateur: ${user?.uid}');
       
       if (user != null) {
-        // 🆕 Calcul de la facture finale avec vérification
+        // Calcul de la facture finale avec vérification
         String finalBillAmount = '';
         if (_selectedBillRange == 'Montant personnalisé') {
           finalBillAmount = _customBillController.text.trim();
         } else if (_selectedBillRange.isNotEmpty) {
           finalBillAmount = _selectedBillRange;
         }
-        // Si aucune sélection, finalBillAmount reste vide
+        // NOUVEAU - Calcul du seuil de consommation
+        String calculatedThreshold = _calculateConsumptionThreshold(
+          _selectedBillRange,
+          _selectedBillRange == 'Montant personnalisé' ? _customBillController.text.trim() : null,
+        );
         
-final profile = UserProfile(
-  uid: user.uid!, // Add ! to assert non-null
-  name: user.displayName ?? '',
-  email: user.email ?? '',
-  phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
-  address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-  meterNumber: _meterNumberController.text.trim(),
-  monthlyBill: finalBillAmount.isNotEmpty ? finalBillAmount : 'Pas renseigné',
-  householdSize: _selectedHouseholdSize,
-  averageConsumption: _selectedConsumption == 'Je ne sais pas' 
-    ? _otherConsumptionController.text.trim() 
-    : _selectedConsumption,
-  electricityProvider: _selectedProvider,
-  tariffPlan: _selectedTariff,
-  appliances: _selectedAppliances,
-  profileCompleted: true,
-  createdAt: DateTime.now(),
-);
+        print('🧪 DEBUG: Facture sélectionnée: $_selectedBillRange');
+        print('🧪 DEBUG: Montant personnalisé: ${_customBillController.text}');
+        print('🧪 DEBUG: Seuil calculé: $calculatedThreshold');
+        
+        final profile = UserProfile(
+          uid: user.uid!,
+          name: user.displayName ?? '',
+          email: user.email ?? '',
+          phoneNumber: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+          address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+          meterNumber: _meterNumberController.text.trim(),
+          monthlyBill: finalBillAmount.isNotEmpty ? finalBillAmount : 'Pas renseigné',
+          seuille_conso: calculatedThreshold, 
+          householdSize: _selectedHouseholdSize,
+          averageConsumption: _selectedConsumption == 'Je ne sais pas' 
+            ? _otherConsumptionController.text.trim() 
+            : _selectedConsumption,
+          electricityProvider: _selectedProvider,
+          tariffPlan: _selectedTariff,
+          appliances: _selectedAppliances,
+          profileCompleted: true,
+          createdAt: DateTime.now(),
+        );
 
-      print('🧪 DEBUG: Profil créé: ${profile.toString()}');
-      print('🧪 DEBUG: Numéro compteur: ${profile.meterNumber}');
-      print('🧪 DEBUG: Facture mensuelle: ${profile.monthlyBill}');
-      
-      await FirestoreService.saveUserProfile(profile);
-      
+        print('🧪 DEBUG: Profil créé: ${profile.toString()}');
+        print('🧪 DEBUG: Numéro compteur: ${profile.meterNumber}');
+        print('🧪 DEBUG: Facture mensuelle: ${profile.monthlyBill}');
+        print('🧪 DEBUG: Seuil consommation: ${profile.seuille_conso}'); // 🆕 NOUVEAU
+        
+        await FirestoreService.saveUserProfile(profile);
+        
         print('🧪 DEBUG: Profil sauvegardé avec succès');
         
         if (mounted) {

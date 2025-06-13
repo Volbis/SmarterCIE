@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:smartmeter_app/screens/notifs_screen.dart';
+import 'package:smartmeter_app/screens/stats_user.dart';
 import 'package:smartmeter_app/services/auth_services/auth_service.dart';
 import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
+import 'package:smartmeter_app/widgets/custom_nav_bar.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -390,58 +393,33 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with AutomaticKeepAliveClientMixin {
-  int _currentIndex = 0;
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    
-
-    _screens = [
-      _buildLazyScreen((context) => const DashboardScreen()),
-      _buildLazyScreen((context) => const ChatbotScreen()),
-      _buildLazyScreen((context) => const SettingsScreen()),
-    ];
-  }
-
-  // Construction différée des widgets d'écran
-  Widget _buildLazyScreen(WidgetBuilder builder) {
-    return Builder(builder: (context) => builder(context));
-  }
+ int _currentIndex = 0;
+  
+  final List<Widget> _screens = [
+    DashboardScreen(),
+    StatsUserScreen(),
+    NotificationsScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Nécessaire pour AutomaticKeepAliveClientMixin
-    
     return Scaffold(
-      // Utiliser IndexedStack pour préserver l'état des écrans
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() => _currentIndex = index);
+          // ✅ Vérification de sécurité
+          if (index >= 0 && index < _screens.length) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Tableau de bord',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Assistant IA',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Paramètres',
-          ),
-        ],
       ),
     );
   }
+
   
   @override
   bool get wantKeepAlive => true; // Garder l'état des écrans en mémoire

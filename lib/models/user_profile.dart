@@ -6,6 +6,7 @@ class UserProfile {
   final String? address;
   final String meterNumber;
   final String monthlyBill; 
+  final String? seuille_conso; 
   final String householdSize;
   final String averageConsumption;
   final String electricityProvider;
@@ -23,6 +24,7 @@ class UserProfile {
     this.address,
     required this.meterNumber, 
     required this.monthlyBill, 
+    this.seuille_conso,
     required this.householdSize,
     required this.averageConsumption,
     required this.electricityProvider,
@@ -40,8 +42,9 @@ class UserProfile {
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'],
       address: map['address'],
-      meterNumber: map['meterNumber'] ?? '', // 🆕 NOUVEAU
-      monthlyBill: map['monthlyBill'] ?? '', // 🆕 NOUVEAU
+      meterNumber: map['meterNumber'] ?? '', 
+      monthlyBill: map['monthlyBill'] ?? '', 
+      seuille_conso: map['seuille_conso'],
       householdSize: map['householdSize'] ?? '',
       averageConsumption: map['averageConsumption'] ?? '',
       electricityProvider: map['electricityProvider'] ?? '',
@@ -60,8 +63,10 @@ class UserProfile {
       'email': email,
       'phoneNumber': phoneNumber,
       'address': address,
-      'meterNumber': meterNumber, // 🆕 NOUVEAU
-      'monthlyBill': monthlyBill, // 🆕 NOUVEAU
+
+      'meterNumber': meterNumber, 
+      'monthlyBill': monthlyBill,
+      'seuille_conso': seuille_conso,
       'householdSize': householdSize,
       'averageConsumption': averageConsumption,
       'electricityProvider': electricityProvider,

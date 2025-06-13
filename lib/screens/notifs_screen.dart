@@ -22,7 +22,7 @@ class NotificationsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header avec action pour marquer comme lu
+                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -43,11 +43,11 @@ class NotificationsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 
-                // Liste des notifications
+                // Content
                 Expanded(
                   child: userService.hasAlert
                       ? _buildNotificationsList()
-                      : _buildEmptyState(),
+                      : _buildEmptyState(), // This call is correct
                 ),
               ],
             ),
@@ -67,7 +67,6 @@ class NotificationsScreen extends StatelessWidget {
           Colors.orange,
           DateTime.now().subtract(const Duration(minutes: 5)),
         ),
-        // Ajoutez d'autres notifications selon vos besoins
       ],
     );
   }
@@ -79,7 +78,10 @@ class NotificationsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.left(color: color, width: 4),
+        // Fix: Correct Border syntax
+        border: Border(
+          left: BorderSide(color: color, width: 4),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

@@ -62,11 +62,11 @@ class UserService extends ChangeNotifier {
 
   // Écouter les changements de l'attribut alerte
   void listenToAlertStatus() {
-    if (_userId == null) return;
+    if (userId == null) return;
     
     _firestore
         .collection('users')
-        .doc(_userId)
+        .doc(userId)
         .snapshots()
         .listen((snapshot) {
       if (snapshot.exists) {
@@ -194,10 +194,8 @@ class UserService extends ChangeNotifier {
     }
   }
 
-
-
     // 🆕 Sauvegarder les données quotidiennes pour l'historique
-    Future<void> saveDailyConsumption() async {
+  Future<void> saveDailyConsumption() async {
       try {
         final user = _auth.currentUser;
         if (user == null) return;
@@ -225,6 +223,22 @@ class UserService extends ChangeNotifier {
     } 
 
 
+Future<void> markAlertAsRead() async {
+    if (userId == null) return;
+    
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'alerte': false,
+      });
+      
+      _hasAlert = false;
+      notifyListeners();
+      
+      debugPrint('✅ Alerte marquée comme lue');
+    } catch (e) {
+      debugPrint('❌ Erreur lors de la mise à jour de l\'alerte: $e');
+    }
+  }
 
   // 🆕 Détection automatique des alertes
   bool get hasHighConsumption => currentPower > 3000;
