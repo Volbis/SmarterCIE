@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
-  final UIChatMessage message;
+  final ChatMessage message;
 
   const ChatBubble({Key? key, required this.message}) : super(key: key);
 
@@ -36,7 +36,7 @@ class ChatBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    message.text,
+                    message.content, // 🔧 Changed from message.text to message.content
                     style: TextStyle(
                       color: message.isUser ? Colors.white : Colors.black87,
                       fontSize: 16,
@@ -44,7 +44,7 @@ class ChatBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                    message.formattedTime, // 🔧 Using the helper method from ChatMessage
                     style: TextStyle(
                       color: message.isUser ? Colors.white70 : Colors.grey[600],
                       fontSize: 12,

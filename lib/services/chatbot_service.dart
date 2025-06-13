@@ -1,142 +1,147 @@
 import 'package:flutter/foundation.dart';
-import 'package:langchain/langchain.dart';
-import 'package:langchain_openai/langchain_openai.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-import 'dart:convert';
-import 'dart:async';
-import 'dart:io';
-import '../models/chat_message.dart'; 
+import 'package:provider/provider.dart';
+import '../models/chat_message.dart';
+import '../services/mistral_ai/mistral_ai.dart'; // 🆕 Import du service Mistral
+import '../services/user_data_manage/user_data_manage.dart'; // 🆕 Import UserService
 
 class ChatbotService extends ChangeNotifier {
-  final ChatOpenAI _llm;
-  final ConversationBufferMemory _memory;
-  late final ConversationChain _chain;
-  
-  // Liste des messages pour l'interface utilisateur
-  final List<UIChatMessage> _messages = []; 
-  List<UIChatMessage> get messages => _messages; 
-  
-  // Indicateur d'état pour l'interface utilisateur
+  final List<ChatMessage> _messages = [];
   bool _isTyping = false;
-  bool get isTyping => _isTyping;
   
-  // Langue courante (peut être modifiée par l'utilisateur)
-  String _currentLanguage = 'Français';
-  String get currentLanguage => _currentLanguage;
-  set currentLanguage(String language) {
-    _currentLanguage = language;
-    notifyListeners();
-  }
+  List<ChatMessage> get messages => _messages;
+  bool get isTyping => _isTyping;
 
-  ChatbotService()
-      : _llm = ChatOpenAI(
-          apiKey: 'test-key', //dotenv.env['OPENAI_API_KEY'] ?? '',
-          defaultOptions: const ChatOpenAIOptions(
-            model: 'gpt-4o-mini',
-            temperature: 0.7,
-          ),
-        ),
-        _memory = ConversationBufferMemory(returnMessages: true) {
-    _chain = ConversationChain(
-      llm: _llm,
-      memory: _memory,
-    );
-  }
-
-  // Méthode pour ajouter un message à la liste des messages
-  void addMessage(String text, bool isUser) {
-    _messages.add(UIChatMessage(
-      text: text,
+  void addMessage(String content, bool isUser) {
+    _messages.add(ChatMessage(
+      content: content,
       isUser: isUser,
+      timestamp: DateTime.now(),
     ));
     notifyListeners();
   }
 
-  // Méthode pour traiter un message de l'utilisateur
-  Future<void> processMessage(String text) async {
-    if (text.trim().isEmpty) return;
+
+Future<void> processMessage(String userMessage, UserService userService) async {
+  // Ajouter le message utilisateur
+  addMessage(userMessage, true);
+  
+  // Afficher l'indicateur de frappe
+  _isTyping = true;
+  notifyListeners();
+
+  try {
+    // 🆕 Créer un prompt enrichi avec les données Firestore
+    final String enrichedPrompt = _buildEnrichedPrompt(userMessage, userService);
     
-    // Ajouter le message de l'utilisateur
-    addMessage(text, true);
+    debugPrint('🤖 Envoi du message à Mistral...');
     
-    // Indiquer que l'assistant est en train de générer une réponse
-    _isTyping = true;
+    // Appeler Mistral avec le prompt enrichi
+    final String response = await getAdviceFromMistral(enrichedPrompt);
+    
+    // Ajouter la réponse IA
+    addMessage(response, false);
+    debugPrint('✅ Réponse ajoutée avec succès');
+    
+  } catch (e) {
+    debugPrint('❌ Erreur ChatbotService: $e');
+    
+    // 🔧 Messages d'erreur plus spécifiques
+    String errorMessage = 'Désolé, je rencontre un problème technique.';
+    
+    if (e.toString().contains('API')) {
+      errorMessage = '🔑 Problème de configuration API. Contactez le support.';
+    } else if (e.toString().contains('429')) {
+      errorMessage = '⏳ Trop de requêtes. Attendez quelques secondes et réessayez.';
+    } else if (e.toString().contains('réseau') || e.toString().contains('network')) {
+      errorMessage = '📶 Problème de connexion. Vérifiez votre internet.';
+    }
+    
+    addMessage(errorMessage, false);
+  } finally {
+    _isTyping = false;
     notifyListeners();
-    
-    try {
-      // Obtenir une réponse du modèle
-      final response = await getResponse(text, _currentLanguage);
-      
-      // Ajouter la réponse de l'assistant
-      addMessage(response, false);
-    } catch (e) {
-      // En cas d'erreur, afficher un message d'erreur
-      addMessage("Désolé, je rencontre un problème technique. Veuillez réessayer plus tard.", false);
-    } finally {
-      // Indiquer que l'assistant a terminé de générer une réponse
-      _isTyping = false;
-      notifyListeners();
-    }
   }
+}
+  // 🆕 Construction du prompt avec données utilisateur
+  String _buildEnrichedPrompt(String userMessage, UserService userService) {
+    final String contextualPrompt = '''
+CONTEXTE UTILISATEUR :
+- Nom: ${userService.displayName}
+- Puissance actuelle: ${userService.currentPower} kW
+- Énergie consommée aujourd'hui: ${userService.energie} kWh
+- Courant: ${userService.courant} A
+- Tension: ${userService.tension} V
+- Coût actuel: ${userService.cout} FCFA
+- Objectif quotidien: ${userService.dailyTarget} kWh
+- Progression: ${userService.targetProgressPercentage}
 
-  Future<Map<String, dynamic>> fetchConsumptionData() async {
-    try {
-      final response = await http.get(Uri.parse('http://192.168.1.100:5000/consumption'))
-          .timeout(const Duration(seconds: 5));
-      
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        return _getMockConsumptionData();
-      }
-    } catch (e) {
-      return _getMockConsumptionData();
-    }
-  }
+INSTRUCTION :
+Tu es un assistant énergétique expert en Côte d'Ivoire. 
+Réponds en français ou en nouchi selon le style de l'utilisateur.
+Base tes conseils sur les données réelles ci-dessus.
+Sois concret, personnalisé et bienveillant.
 
-  Map<String, dynamic> _getMockConsumptionData() {
-    return {
-      'daily_consumption': 3.5,
-      'monthly_consumption': 105.2,
-      'current_power': 420.7,
-      'threshold': 150.0,
-      'is_above_threshold': false,
-    };
-  }
-
-  Future<String> getResponse(String userInput, String language) async {
-    try {
-      final consumptionData = await fetchConsumptionData();
-      final contextualInput = '''
-Contexte: Tu es un assistant énergétique pour des ménages ivoiriens. Réponds en $language (Français, Nouchi, ou Anglais) avec un ton adapté au contexte local.
-
-Données de consommation actuelles:
-- Consommation journalière: ${consumptionData['daily_consumption']} kWh
-- Consommation mensuelle: ${consumptionData['monthly_consumption']} kWh  
-- Puissance actuelle: ${consumptionData['current_power']} W
-- Seuil mensuel: ${consumptionData['threshold']} kWh
-- Au-dessus du seuil: ${consumptionData['is_above_threshold'] ? 'Oui' : 'Non'}
-
-Question de l'utilisateur: $userInput
+QUESTION DE L'UTILISATEUR :
+${userMessage}
 ''';
 
-      final result = await _chain.invoke({
-        'input': contextualInput,
-      });
+    return contextualPrompt;
+  }
 
-      return result['response'] as String;
-    } catch (e) {
-      // Remplacer OpenAIException par Exception générique ou spécifique si disponible
-      if (e is Exception) {
-        return "Problème avec le service IA. Détail: ${e.toString()}";
-      } else if (e is TimeoutException) {
-        return "La réponse prend trop de temps. Réessayez.";
-      } else if (e is HttpException) {
-        return "Problème de connexion réseau.";
-      }
-      return "Erreur technique inattendue.";
+  // 🆕 Réponses rapides intelligentes
+  Future<void> processQuickResponse(String quickMessage, UserService userService) async {
+    switch (quickMessage) {
+      case '💡 Combien je consomme maintenant ?':
+        final response = _generateConsumptionResponse(userService);
+        addMessage(response, false);
+        break;
+        
+      case '⚠️ Est-ce que je dépasse le seuil ?':
+        final response = _generateThresholdResponse(userService);
+        addMessage(response, false);
+        break;
+        
+      case '💰 Donne-moi des astuces pour économiser':
+        await processMessage('Donne-moi 3 conseils personnalisés pour réduire ma consommation', userService);
+        break;
+        
+      case '📊 Quel est mon bilan énergétique du jour ?':
+        final response = _generateDailySummary(userService);
+        addMessage(response, false);
+        break;
+        
+      default:
+        await processMessage(quickMessage, userService);
     }
+  }
+
+  String _generateConsumptionResponse(UserService userService) {
+    if (userService.currentPower > 3000) {
+      return '⚡ Vous consommez actuellement ${userService.currentPower.toStringAsFixed(0)} kW. '
+             'C\'est assez élevé ! Vérifiez vos gros appareils (clim, chauffe-eau...).';
+    } else {
+      return '💚 Votre consommation actuelle est de ${userService.currentPower.toStringAsFixed(0)} kW. '
+             'C\'est dans la normale !';
+    }
+  }
+
+  String _generateThresholdResponse(UserService userService) {
+    if (userService.targetProgress > 1.0) {
+      return '🔴 Attention ! Vous avez dépassé votre objectif de ${userService.dailyTarget} kWh. '
+             'Vous êtes à ${userService.targetProgressPercentage}. Réduisez votre consommation !';
+    } else {
+      return '✅ Vous êtes à ${userService.targetProgressPercentage} de votre objectif quotidien. '
+             'Continuez ainsi !';
+    }
+  }
+
+  String _generateDailySummary(UserService userService) {
+    return '''📊 **Bilan du jour**
+• Consommé: ${userService.energie.toStringAsFixed(1)} kWh
+• Objectif: ${userService.dailyTarget} kWh  
+• Progression: ${userService.targetProgressPercentage}
+• Coût actuel: ${userService.cout.toStringAsFixed(0)} FCFA
+
+${userService.targetProgress > 0.8 ? '⚠️ Attention à ne pas dépasser !' : '💚 Vous maîtrisez bien !'}''';
   }
 }

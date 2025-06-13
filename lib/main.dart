@@ -35,11 +35,14 @@ void main() async {
 
   // Chargement des variables d'environnement
   try {
-    await dotenv.load(fileName: "assets/config/.env");
+    await dotenv.load(fileName: ".env");
     print("✅ Variables d'environnement chargées");
   } catch (e) {
     print("⚠️ Fichier .env non trouvé ou erreur de lecture: $e");
   }
+    // Test debug
+  debugPrint('🔑 Test API Key88: ${dotenv.env['OPEN_ROUTER_API_KEY']?.substring(0, 10)}...');
+
 
   // Optimisation du rendu de l'application
   SystemChrome.setSystemUIOverlayStyle(

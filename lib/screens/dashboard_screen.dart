@@ -11,7 +11,7 @@ class DashboardScreen extends StatefulWidget {
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
-
+ 
 class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAliveClientMixin {
   bool _isFirstLoad = true;
 
@@ -25,11 +25,26 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     await Future.delayed(Duration.zero);
     if (_isFirstLoad && mounted) {
       _isFirstLoad = false;
-            // Charger les données API et utilisateur
+      
+      debugPrint('🔄 Début du chargement des données dashboard');
+      
+      final userService = Provider.of<UserService>(context, listen: false);
+      debugPrint('👤 UserService actuel - UID: ${userService.userId}');
+      debugPrint('⚡ Puissance actuelle avant fetch: ${userService.currentPower}');
+      
+      // Charger les données API et utilisateur
       await Future.wait([
         Provider.of<ApiService>(context, listen: false).fetchData(),
-        Provider.of<UserService>(context, listen: false).fetchUserData(), // 🆕 Charger données utilisateur
-      ]);    }
+        userService.fetchUserData(),
+      ]);
+      
+      // 🆕 Démarrer l'écoute en temps réel après le premier chargement
+      userService.listenToUserData();
+      userService.listenToAlertStatus(); 
+          
+      
+      debugPrint('⚡ Puissance actuelle après fetch: ${userService.currentPower}');
+    }
   }
 
   Future<void> _refreshData() async {
@@ -39,6 +54,22 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     ]);
   }
 
+  Future<void> markAlertAsRead() async {
+    if (_userId == null) return;
+    
+    try {
+      await _firestore.collection('users').doc(_userId).update({
+        'alerte': false,
+      });
+      
+      _hasAlert = false;
+      notifyListeners();
+      
+      debugPrint('✅ Alerte marquée comme lue');
+    } catch (e) {
+      debugPrint('❌ Erreur lors de la mise à jour de l\'alerte: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,141 +104,160 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
+  Widget _buildHeader(ApiService apiService, UserService userService) {
+    // 🆕 Utiliser les valeurs depuis UserService (Firestore)
+    // final currentPower = userService.isLoading ? 0.0 : userService.currentPower;
+    
+    final cout = userService.isLoading ? 0.0 : userService.cout;
+    final todayEnergy = userService.isLoading ? 0.0 : userService.energie; // Utiliser energie depuis Firestore
+    
+    // Récupérer le nom utilisateur
+    final userName = userService.displayName;
+    final timeOfDay = _getTimeOfDay();
 
-  Widget _buildHeader(ApiService apiService, UserService userService) { // 🆕 Ajouter UserService
-      final currentPower = apiService.isLoading ? 0.0 : apiService.getCurrentPower();
-      final todayEnergy = apiService.isLoading ? 0.0 : apiService.getTodayEnergy();
-      
-      // 🆕 Récupérer le nom utilisateur
-      final userName = userService.displayName;
-      final timeOfDay = _getTimeOfDay();
-
-      return Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF7FB069), Color(0xFF38b000)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7FB069), Color(0xFF38b000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF38b000).withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          borderRadius: const BorderRadius.only(
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.only(
             bottomLeft: Radius.circular(24),
             bottomRight: Radius.circular(24),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF38b000).withOpacity(0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // En-tête avec nom et notification
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TweenAnimationBuilder(
-                    tween: Tween<double>(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 800),
-                    builder: (context, value, child) => Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 20 * (1 - value)),
-                        child: child,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          timeOfDay, // 🆕 Salutation dynamique selon l'heure
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // 🆕 Gestion du loading et erreur pour le nom
-                        userService.isLoading
-                            ? const SizedBox(
-                                width: 120,
-                                height: 28,
-                                child: LinearProgressIndicator(
-                                  backgroundColor: Colors.white24,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : Text(
-                                userName, // 🆕 Nom dynamique depuis Firestore
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                      ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // En-tête avec nom et notification
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 800),
+                  builder: (context, value, child) => Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: child,
                     ),
                   ),
-                  Stack(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1,
-                          ),
+                      Text(
+                        timeOfDay, // Salutation dynamique selon l'heure
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Gestion du loading et erreur pour le nom
+                      userService.isLoading
+                          ? const SizedBox(
+                              width: 120,
+                              height: 28,
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.white24,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              userName, //  Nom dynamique depuis Firestore
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
                         child: const Icon(
                           Icons.notifications_outlined,
                           color: Colors.white,
                           size: 26,
                         ),
                       ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Color.fromARGB(218, 245, 93, 11), 
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color.fromARGB(218, 245, 93, 11),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    // Afficher la bulle orange seulement si hasAlert est true
+                    Consumer<UserService>(
+                      builder: (context, userService, child) {
+                        return userService.hasAlert
+                            ? Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: Color.fromARGB(218, 245, 93, 11),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color.fromARGB(218, 245, 93, 11),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 7),
+            const SizedBox(height: 7),
 
-              // Statut et date
-              Row(
+            // Statut et date
+            Row(
               children: [
                 TweenAnimationBuilder(
                   tween: Tween<double>(begin: 0, end: 1),
@@ -261,11 +311,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 ),
               ],
             ),
-              
-              const SizedBox(height: 24),
 
+            const SizedBox(height: 24),
 
-            // Consommation actuelle
+            // Consommation actuelle (Données depuis Firestore)
             TweenAnimationBuilder(
               tween: Tween<double>(begin: 0, end: 1),
               duration: const Duration(milliseconds: 1200),
@@ -280,9 +329,9 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${currentPower.toStringAsFixed(0)}',
+                    '${cout.toStringAsFixed(0)}', 
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 255, 255, 255),
                       fontSize: 56,
                       fontWeight: FontWeight.w900,
                       height: 1.1,
@@ -291,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   const Padding(
                     padding: EdgeInsets.only(bottom: 10),
                     child: Text(
-                      ' kW',
+                      ' Fcfa',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 24,
@@ -302,11 +351,11 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 ],
               ),
             ),
-              
-              const SizedBox(height: 8),
 
-              Text(
-              '${todayEnergy.toStringAsFixed(1)} kWh consommés aujourd\'hui',
+            const SizedBox(height: 8),
+
+            Text(
+              '${todayEnergy.toStringAsFixed(1)} kWh consommés aujourd\'hui', // 🆕 Energie depuis Firestore
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 16,
@@ -343,7 +392,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     return months[month - 1];
   }
 
-
   Widget _buildLoadingView() {
     return const Center(
       child: Column(
@@ -375,181 +423,173 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   }
 
   Widget _buildConsumptionChart(ApiService apiService) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Consommation du jour',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF333333),
+      return Consumer<UserService>(
+        builder: (context, userService, child) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.trending_down,
-                      size: 14,
-                      color: Colors.green[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '8%',
+                    const Text(
+                      'Consommation du jour',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green[600],
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: userService.yesterdayComparison < 0 ? Colors.green[50] : Colors.red[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            userService.yesterdayComparison < 0 ? Icons.trending_down : Icons.trending_up,
+                            size: 14,
+                            color: userService.yesterdayComparison < 0 ? Colors.green[600] : Colors.red[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            userService.yesterdayComparisonText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: userService.yesterdayComparison < 0 ? Colors.green[600] : Colors.red[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 25),
+                
+                // Graphique circulaire avec progression dynamique
+                Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 160,
+                        height: 160,
+                        child: TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 1500),
+                          curve: Curves.easeOutCubic,
+                          tween: Tween<double>(begin: 0.0, end: userService.targetProgress.clamp(0.0, 1.0)),
+                          builder: (context, value, child) {
+                            return CustomPaint(
+                              painter: CircularProgressPainter(
+                                progress: value,
+                                strokeWidth: 12,
+                                backgroundColor: Colors.grey[100]!,
+                                progressColor: const Color(0xFFFF8A00),
+                                secondaryColor: const Color(0xFFFF6B00),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      
+                      // Contenu central dynamique
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 1500),
+                            curve: Curves.easeOutCubic,
+                            tween: Tween<double>(begin: 0.0, end: userService.energie),
+                            builder: (context, value, child) {
+                              return Text(
+                                '${value.toStringAsFixed(1)}',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF333333),
+                                ),
+                              );
+                            },
+                          ),
+                          const Text(
+                            'kWh',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${userService.targetProgressPercentage} de l\'objectif',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+  Widget _buildQuickStats(ApiService apiService) {
+      return Consumer<UserService>(
+        builder: (context, userService, child) {
+          return Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Économie',
+                  userService.yesterdayComparisonText,
+                  'vs hier',
+                  userService.yesterdayComparison < 0 ? Colors.green : Colors.red,
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: _buildStatCard(
+                  'Objectif',
+                  userService.targetProgressPercentage,
+                  'atteint',
+                  Colors.orange,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 25),
-          
-          // Graphique circulaire amélioré
-          Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Cercle de fond avec animation
-                SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 1500),
-                    curve: Curves.easeOutCubic,
-                    tween: Tween<double>(begin: 0.0, end: 0.72),
-                    builder: (context, value, child) {
-                      return CustomPaint(
-                        painter: CircularProgressPainter(
-                          progress: value,
-                          strokeWidth: 12,
-                          backgroundColor: Colors.grey[100]!,
-                          progressColor: const Color(0xFFFF8A00),
-                          secondaryColor: const Color(0xFFFF6B00),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                
-                // Contenu central
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeOutCubic,
-                      tween: Tween<double>(begin: 0.0, end: 72.0),
-                      builder: (context, value, child) {
-                        return Text(
-                          '${value.toInt()}',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333),
-                          ),
-                        );
-                      },
-                    ),
-                    const Text(
-                      'kWh',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '72% de l\'objectif',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.green[600],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                    
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 25),
-          
-          // Statistiques détaillées
-
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStats(ApiService apiService) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Quartier',
-            '84 kWh',
-            'Moyenne',
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: _buildStatCard(
-            'Économie',
-            '-8%',
-            'vs hier',
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: _buildStatCard(
-            'Objectif',
-            '74%',
-            'atteint',
-            Colors.orange,
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        },
+      );
+    }
 
   Widget _buildStatCard(String title, String value, String subtitle, Color color) {
     return Container(
@@ -597,130 +637,129 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   }
 
   Widget _buildAlertsSection(ApiService apiService) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Alertes & Conseils',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
-              ),
-            ),
-            Text(
-              'Tout voir',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        
-        // Alerte pic de consommation
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.orange[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.orange[200]!),
-          ),
-          child: Row(
+      return Consumer<UserService>(
+        builder: (context, userService, child) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange[600],
-                  size: 20,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Alertes & Conseils',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                  Text(
+                    'Tout voir',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 15),
+              
+              // Génération dynamique des alertes
+              ...userService.alerts.map((alert) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _getAlertBackgroundColor(alert['color']),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _getAlertBorderColor(alert['color'])),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      'Pic de consommation détecté',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _getAlertIconBackgroundColor(alert['color']),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getAlertIcon(alert['icon']),
+                        color: _getAlertIconColor(alert['color']),
+                        size: 20,
                       ),
                     ),
-                    Text(
-                      'Réduisez votre climatisation pour économiser',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            alert['title'],
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            alert['message'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
+              )).toList(),
             ],
-          ),
-        ),
-        
-        const SizedBox(height: 10),
-        
-        // Conseil du jour
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green[200]!),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.lightbulb_outline,
-                  color: Colors.green[600],
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Conseil du jour',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      'Éteignez vos appareils en veille pour économiser',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+          );
+        },
+      );
+    }
+    
+  Color _getAlertBackgroundColor(String color) {
+    switch (color) {
+      case 'orange': return Colors.orange[50]!;
+      case 'green': return Colors.green[50]!;
+      case 'red': return Colors.red[50]!;
+      default: return Colors.blue[50]!;
+    }
+  }
+
+  Color _getAlertBorderColor(String color) {
+    switch (color) {
+      case 'orange': return Colors.orange[200]!;
+      case 'green': return Colors.green[200]!;
+      case 'red': return Colors.red[200]!;
+      default: return Colors.blue[200]!;
+    }
+  }
+
+  Color _getAlertIconBackgroundColor(String color) {
+    switch (color) {
+      case 'orange': return Colors.orange[100]!;
+      case 'green': return Colors.green[100]!;
+      case 'red': return Colors.red[100]!;
+      default: return Colors.blue[100]!;
+    }
+  }
+
+  Color _getAlertIconColor(String color) {
+    switch (color) {
+      case 'orange': return Colors.orange[600]!;
+      case 'green': return Colors.green[600]!;
+      case 'red': return Colors.red[600]!;
+      default: return Colors.blue[600]!;
+    }
+  }
+
+  IconData _getAlertIcon(String iconName) {
+    switch (iconName) {
+      case 'warning_amber_rounded': return Icons.warning_amber_rounded;
+      case 'lightbulb_outline': return Icons.lightbulb_outline;
+      default: return Icons.info_outline;
+    }
   }
 
   @override
