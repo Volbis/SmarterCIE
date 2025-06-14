@@ -397,9 +397,9 @@ class _MainScreenState extends State<MainScreen> with AutomaticKeepAliveClientMi
   
   final List<Widget> _screens = [
     DashboardScreen(),
-    StatsUserScreen(),
     NotificationsScreen(),
-    SettingsScreen(),
+    ChatbotScreen(),
+    StatsUserScreen(),
   ];
 
   @override

@@ -30,10 +30,10 @@ class UserService extends ChangeNotifier {
   String? get error => _error;
   Map<String, dynamic>? get userData => _userData;
   String get displayName => _userData?['name'] ?? 'Utilisateur';
+  double get seuille_conso => _userData?['seuille_conso'] ?? 50.0;  
   
-
   // 🆕 Calculs automatiques basés sur les données Firebase
-  double get dailyTarget => 100.0; // Peut être défini dans le profil utilisateur
+  double get dailyTarget => 100.0; 
   double get targetProgress => energie / dailyTarget;
   String get targetProgressPercentage => '${(targetProgress * 100).toInt()}%';
   
@@ -266,6 +266,7 @@ Future<void> markAlertAsRead() async {
     
     return alertsList;
   }
+
 
   // 🆕 Méthode pour récupérer les données utilisateur et de consommation
   Future<void> fetchUserData() async {

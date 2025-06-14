@@ -7,6 +7,7 @@ import '../services/user_data_manage/user_data_manage.dart'; // 🆕 Import User
 class ChatbotService extends ChangeNotifier {
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
+
   
   List<ChatMessage> get messages => _messages;
   bool get isTyping => _isTyping;

@@ -13,27 +13,27 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 70, 
-      margin: const EdgeInsets.all(12), 
+      height: 65, // ✅ Réduit de 70 à 65px
+      margin: const EdgeInsets.all(10), // ✅ Réduit de 12 à 10px
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22), 
+        borderRadius: BorderRadius.circular(20), // ✅ Réduit de 22 à 20px
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 255, 103, 56).withOpacity(0.15),
-            blurRadius: 18, 
-            offset: const Offset(0, 6),
+            color: const Color(0xFFFF8A65).withOpacity(0.15),
+            blurRadius: 15, // ✅ Réduit de 18 à 15px
+            offset: const Offset(0, 5), // ✅ Réduit de 6 à 5px
             spreadRadius: 0,
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            blurRadius: 6, // ✅ Réduit de 8 à 6px
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22), 
+        borderRadius: BorderRadius.circular(20), // ✅ Ajusté
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -44,14 +44,14 @@ class CustomBottomNavigationBar extends StatelessWidget {
               isSelected: currentIndex == 0,
             ),
             _buildNavItem(
-              icon: Icons.analytics_rounded,
-              label: 'Analytics',
+              icon: Icons.notification_important_rounded,
+              label: 'Alertes',
               index: 1,
               isSelected: currentIndex == 1,
             ),
             _buildNavItem(
-              icon: Icons.notifications_rounded,
-              label: 'Alertes',
+              icon: Icons.auto_awesome_rounded,
+              label: 'ChatBot',
               index: 2,
               isSelected: currentIndex == 2,
             ),
@@ -79,19 +79,19 @@ class CustomBottomNavigationBar extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 10), 
+          padding: const EdgeInsets.symmetric(vertical: 8), // ✅ Réduit de 10 à 8px
           decoration: BoxDecoration(
             gradient: isSelected
                 ? const LinearGradient(
                     colors: [
-                      Color.fromARGB(201, 255, 99, 51), 
-                      Color.fromARGB(210, 252, 112, 69), 
+                      Color.fromARGB(255, 244, 132, 98), // Orange très soft
+                      Color.fromARGB(255, 250, 114, 73), // Orange soft
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
                 : null,
-            borderRadius: BorderRadius.circular(18), 
+            borderRadius: BorderRadius.circular(16), // ✅ Réduit de 18 à 16px
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -99,12 +99,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
               // Icône avec animation
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                padding: EdgeInsets.all(isSelected ? 6 : 5),
+                padding: EdgeInsets.all(isSelected ? 5 : 4), 
                 decoration: BoxDecoration(
                   color: isSelected 
                       ? Colors.white.withOpacity(0.2)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10), 
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
@@ -114,7 +114,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   size: isSelected ? 22 : 20, 
                 ),
               ),
-              const SizedBox(height: 3), 
+              const SizedBox(height: 2), 
               // Label avec animation
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 300),
@@ -122,6 +122,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   color: isSelected 
                       ? Colors.white 
                       : const Color(0xFFBDBDBD),
+                  fontSize: isSelected ? 9 : 8, // ✅ Réduit de 10:9 à 9:8px
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
                 child: Text(label),
@@ -133,6 +134,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
     );
   }
 }
+
+
 // Version alternative avec des bulles flottantes
 class FloatingBottomNavigationBar extends StatelessWidget {
   final int currentIndex;

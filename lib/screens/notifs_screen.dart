@@ -5,58 +5,155 @@ import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: const Color(0xFF38b000),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Consumer<UserService>(
-        builder: (context, userService, child) {
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey.shade50,
+    appBar: AppBar(
+      title: const Text('Notifications'),
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black87,
+      elevation: 0,
+      centerTitle: true,
+    ),
+    body: Consumer<UserService>(
+      builder: (context, userService, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header simple et clean
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Vos alertes',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Notifications',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userService.hasAlert 
+                                ? 'Vous avez de nouvelles alertes'
+                                : 'Aucune nouvelle notification',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (userService.hasAlert)
-                      TextButton(
+                      ElevatedButton.icon(
                         onPressed: () => userService.markAlertAsRead(),
-                        child: const Text('Marquer comme lu'),
+                        icon: const Icon(Icons.check, size: 16),
+                        label: const Text('Tout lire'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF38b000),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                
-                // Content
-                Expanded(
-                  child: userService.hasAlert
-                      ? _buildNotificationsList()
-                      : _buildEmptyState(), // This call is correct
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+              ),
+              const SizedBox(height: 20),
+              
+              // Contenu des notifications
+              Expanded(
+                child: userService.hasAlert
+                    ? _buildSimpleNotificationsList()
+                    : _buildSimpleEmptyState(),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
 
+// État vide simplifié
+Widget _buildSimpleEmptyState() {
+  return Center(
+    child: Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_none,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Aucune notification',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Vous êtes à jour avec toutes vos alertes',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// Liste des notifications simplifiée
+Widget _buildSimpleNotificationsList() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade200),
+    ),
+    child: _buildNotificationsList(),
+  );
+}
   Widget _buildNotificationsList() {
     return ListView(
       children: [

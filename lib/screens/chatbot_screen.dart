@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/chatbot_service.dart';
 import '../services/user_data_manage/user_data_manage.dart';
 import '../models/chat_message.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -31,7 +33,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final userService = Provider.of<UserService>(context, listen: false);
       _chatbotService.addMessage(
         'Bonjour ${userService.displayName} ! 👋\n'
-        'Votre consommation actuelle: ${userService.currentPower.toStringAsFixed(0)} kW\n'
+        'Votre consommation actuelle: ${userService.energie.toStringAsFixed(0)} kWh\n'
         'Comment puis-je vous aider aujourd\'hui ?',
         false,
       );
@@ -70,7 +72,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Assistant IA',
+                    'SmartMeter IA',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -146,13 +148,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: softOrange, // 🎨 Orange très doux pour le bot
+                color: softOrange,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.smart_toy_outlined,
                 size: 16,
-                color: primaryOrange, // 🎨 Icône orange
+                color: primaryOrange,
               ),
             ),
             const SizedBox(width: 12),
@@ -161,7 +163,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: message.isUser ? primaryOrange : Colors.white, // 🎨 Orange pour utilisateur
+                color: message.isUser ? primaryOrange : Colors.white,
                 borderRadius: BorderRadius.circular(20).copyWith(
                   bottomLeft: message.isUser ? const Radius.circular(20) : const Radius.circular(4),
                   bottomRight: message.isUser ? const Radius.circular(4) : const Radius.circular(20),
@@ -174,14 +176,65 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   ),
                 ],
               ),
-              child: Text(
-                message.content,
-                style: TextStyle(
-                  color: message.isUser ? Colors.white : Colors.black87,
-                  fontSize: 15,
-                  height: 1.4,
-                ),
-              ),
+              child: message.isUser 
+                  ? Text(
+                      message.content,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    )
+                  : MarkdownBody(
+                      data: message.content,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 15,
+                          height: 1.4,
+                        ),
+                        h1: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h2: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h3: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        listBullet: const TextStyle(
+                          color: primaryOrange,
+                          fontSize: 15,
+                        ),
+                        code: TextStyle(
+                          backgroundColor: Colors.grey.shade100,
+                          color: Colors.red.shade700,
+                          fontSize: 14,
+                        ),
+                        codeblockDecoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        blockquote: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        strong: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        em: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
             ),
           ),
           if (message.isUser) ...[
@@ -190,7 +243,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: primaryOrange, // 🎨 Orange pour l'utilisateur
+                color: primaryOrange,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
@@ -242,7 +295,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -286,23 +339,23 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             builder: (context, userService, child) {
               return Wrap(
                 spacing: 8,
-                runSpacing: 8,
+                                runSpacing: 8,
                 children: [
                   _buildSuggestionChip(
-                    '💡 Ma consommation actuelle',
-                    'Analysez ma consommation de ${userService.currentPower.toStringAsFixed(0)} kW',
+                    '📋 Plan de consommation',
+                    'Plan de consommation intélligent et détaullé pour un seuil ${userService.seuille_conso} kWh vs actuel ${userService.currentPower.toStringAsFixed(0)} kW : écart chiffré, 3 actions immédiates, objectif 7 jours. Max 200 mots bullet points.',
                   ),
                   _buildSuggestionChip(
                     '💰 Conseils d\'économie',
-                    'Donnez-moi des conseils pour réduire ma facture',
+                    'Top 5 actions pour réduire ma facture avec estimation d\'économies en euros. Réponse directe, max 120 mots.',
                   ),
                   _buildSuggestionChip(
                     '📊 Bilan énergétique',
-                    'Quel est mon bilan de consommation aujourd\'hui ?',
+                    'Bilan aujourd\'hui : consommation vs objectif, tendance, alerte si dépassement. Chiffres précis, max 100 mots.',
                   ),
                   _buildSuggestionChip(
                     '⚡ Optimisation',
-                    'Comment optimiser ma consommation électrique ?',
+                    '3 optimisations prioritaires pour ma consommation actuelle avec impact estimé en %. Conseils pratiques, max 130 mots.',
                   ),
                 ],
               );
@@ -425,7 +478,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
     
-    _controller.clear();
+     _controller.clear();
     final userService = Provider.of<UserService>(context, listen: false);
     _chatbotService.processMessage(text, userService);
     _scrollToBottom();

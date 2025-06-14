@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartmeter_app/services/user_data_manage/user_data_manage.dart';
+import 'package:smartmeter_app/widgets/pdf_form.dart';
+
 
 class StatsUserScreen extends StatefulWidget {
   const StatsUserScreen({Key? key}) : super(key: key);
@@ -11,6 +13,7 @@ class StatsUserScreen extends StatefulWidget {
 
 class _StatsUserScreenState extends State<StatsUserScreen> {
   bool _isFirstLoad = true;
+  bool _isGeneratingPdf = false;
 
   @override
   void initState() {
@@ -35,20 +38,57 @@ class _StatsUserScreenState extends State<StatsUserScreen> {
     await userService.fetchUserData();
   }
 
+  Future<void> _generateInvoice() async {
+    setState(() {
+      _isGeneratingPdf = true;
+    });
+
+    try {
+      final userService = Provider.of<UserService>(context, listen: false);
+      await PdfInvoiceGenerator.generateInvoice(userService);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Facture générée avec succès !'),
+            backgroundColor: Color(0xFF38b000),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la génération: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'Mes Statistiques',
+          'Mon profil',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: const Color(0xFF38b000),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF8F9FA),
+        foregroundColor: const Color.fromARGB(255, 12, 0, 0),
         elevation: 0,
       ),
       body: Consumer<UserService>(
@@ -133,11 +173,106 @@ class _StatsUserScreenState extends State<StatsUserScreen> {
                   
                   // Alertes et conseils
                   _buildAlertsSection(userService),
+                  const SizedBox(height: 30),
+                  
+                  // Bouton de téléchargement de facture
+                  _buildDownloadInvoiceButton(),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDownloadInvoiceButton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF38b000), Color(0xFF2E8B00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF38b000).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.file_download_outlined,
+              color: Colors.white,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Télécharger ma facture',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Générer un PDF avec vos informations de consommation et détails de facturation actuels',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isGeneratingPdf ? null : _generateInvoice,
+              icon: _isGeneratingPdf 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF38b000)),
+                      ),
+                    )
+                  : const Icon(Icons.download_rounded, size: 20),
+              label: Text(
+                _isGeneratingPdf ? 'Génération en cours...' : 'Télécharger PDF',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF38b000),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -540,6 +675,12 @@ class _StatsUserScreenState extends State<StatsUserScreen> {
                 _buildProfileRow('Seuil de consommation', '${userData['seuille_conso']} FCFA', Icons.warning_amber),
               if (userData['address'] != null)
                 _buildProfileRow('Adresse', userData['address'], Icons.location_on),
+              if (userData['currentIntensity'] != null)
+                _buildProfileRow(
+                   'Intensité du courant', 
+                    userData['currentIntensity'], 
+                    Icons.electrical_services
+                ),
             ],
           ),
         ),

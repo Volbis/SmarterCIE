@@ -280,6 +280,7 @@ class GoogleAuthService extends ChangeNotifier {
       profileCompleted: false,
       createdAt: DateTime.now(),
       meterNumber: '', 
+      seuille_conso: '5000',
       monthlyBill: '', 
     );
     

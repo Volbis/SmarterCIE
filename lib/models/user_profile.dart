@@ -63,7 +63,6 @@ class UserProfile {
       'email': email,
       'phoneNumber': phoneNumber,
       'address': address,
-
       'meterNumber': meterNumber, 
       'monthlyBill': monthlyBill,
       'seuille_conso': seuille_conso,
