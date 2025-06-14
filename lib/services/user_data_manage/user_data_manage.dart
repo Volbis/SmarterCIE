@@ -30,7 +30,7 @@ class UserService extends ChangeNotifier {
   String? get error => _error;
   Map<String, dynamic>? get userData => _userData;
   String get displayName => _userData?['name'] ?? 'Utilisateur';
-  double get seuille_conso => _userData?['seuille_conso'] ?? 50.0;  
+  String get seuille_conso => _userData?['seuille_conso'] ?? 50.0;  
   
   // 🆕 Calculs automatiques basés sur les données Firebase
   double get dailyTarget => 100.0; 
