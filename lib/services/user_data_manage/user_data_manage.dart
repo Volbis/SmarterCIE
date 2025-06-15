@@ -11,6 +11,7 @@ class UserService extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   
+  
   // 🆕 Données de consommation détaillées depuis Firebase
   double _puissanceActuelle = 0.0;
   double _energieConsommee = 0.0;

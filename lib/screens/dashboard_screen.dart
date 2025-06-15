@@ -583,6 +583,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       );
     }
 
+
   Widget _buildStatCard(String title, String value, String subtitle, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -627,6 +628,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       ),
     );
   }
+
 
   Widget _buildAlertsSection(ApiService apiService) {
       return Consumer<UserService>(

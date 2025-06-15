@@ -164,9 +164,9 @@ class _AuthPageState extends State<AuthPage>
                       const SizedBox(height: 15), 
 
                     // 🧪 BOUTON TEMPORAIRE POUR TESTER LE FORMULAIRE
-                      _buildTestFormButton()
+                      //_buildTestFormButton()
                       
-                      ,
+                      
                       const SizedBox(height: 20),
                       _buildForm(),
                       const SizedBox(height: 20), 
@@ -204,7 +204,7 @@ class _AuthPageState extends State<AuthPage>
     );
   }
     
-
+/*
 // 🧪 MÉTHODE TEMPORAIRE POUR TESTER LE FORMULAIRE
 Widget _buildTestFormButton() {
   return Container(
@@ -270,7 +270,7 @@ Widget _buildTestFormButton() {
     ),
   );
 }
-
+*/
 // 🧪 MÉTHODE POUR NAVIGUER VERS LE FORMULAIRE DE TEST
 void _navigateToTestForm() {
   HapticFeedback.lightImpact();
